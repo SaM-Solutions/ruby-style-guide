@@ -63,6 +63,7 @@ Translations of the guide are available in the following languages:
 * [Chinese Simplified](https://github.com/JuanitoFatas/ruby-style-guide/blob/master/README-zhCN.md)
 * [Chinese Traditional](https://github.com/JuanitoFatas/ruby-style-guide/blob/master/README-zhTW.md)
 * [French](https://github.com/porecreat/ruby-style-guide/blob/master/README-frFR.md)
+* [Japanese](https://github.com/fortissimo1997/ruby-style-guide/blob/japanese/README.ja.md)
 * [Spanish](https://github.com/alemohamad/ruby-style-guide/blob/master/README-esLA.md)
 * [Vietnamese](https://github.com/scrum2b/ruby-style-guide/blob/master/README-viVN.md)
 
@@ -457,19 +458,19 @@ Translations of the guide are available in the following languages:
 
     ```Ruby
     # bad - single indent
-    menu_item = ["Spam", "Spam", "Spam", "Spam", "Spam", "Spam", "Spam", "Spam",
-      "Baked beans", "Spam", "Spam", "Spam", "Spam", "Spam"]
+    menu_item = ['Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam',
+      'Baked beans', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam']
 
     # good
     menu_item = [
-      "Spam", "Spam", "Spam", "Spam", "Spam", "Spam", "Spam", "Spam",
-      "Baked beans", "Spam", "Spam", "Spam", "Spam", "Spam"
+      'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam',
+      'Baked beans', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam'
     ]
 
     # good
     menu_item =
-      ["Spam", "Spam", "Spam", "Spam", "Spam", "Spam", "Spam", "Spam",
-       "Baked beans", "Spam", "Spam", "Spam", "Spam", "Spam"]
+      ['Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam',
+       'Baked beans', 'Spam', 'Spam', 'Spam', 'Spam', 'Spam']
     ```
 
 * Add underscores to large numeric literals to improve their readability.
@@ -1037,10 +1038,36 @@ Never use `::` for regular method invocation.
     end
     ```
 
-* Use `||=` freely to initialize variables.
+* Use shorthand self assignment operators whenever applicable.
 
     ```Ruby
-    # set name to Bozhidar, only if it's nil or false
+    # bad
+    x = x + y
+    x = x * y
+    x = x**y
+    x = x / y
+    x = x || y
+    x = x && y
+
+    # good
+    x += y
+    x *= y
+    x **= y
+    x /= y
+    x ||= y
+    x &&= y
+    ```
+
+* Use `||=` to initialize variables only if they're not already initialized.
+
+    ```Ruby
+    # bad
+    name = name ? name : 'Bozhidar'
+
+    # bad
+    name = 'Bozhidar' unless name
+
+    # good - set name to Bozhidar, only if it's nil or false
     name ||= 'Bozhidar'
     ```
 
@@ -1170,14 +1197,35 @@ you if you forget either of the rules above!
     l.call(1)
     ```
 
-* Use `_` for unused block parameters.
+* Prefix with `_` unused block parameters and local variables. It's
+  also acceptable to use just `_` (although it's a bit less
+  descriptive). This convention is recognized by the Ruby interpreter
+  and tools like RuboCop and will suppress their unused variable warnings.
 
     ```Ruby
     # bad
     result = hash.map { |k, v| v + 1 }
 
+    def something(x)
+      unused_var, used_var = something_else(x)
+      # ...
+    end
+
+    # good
+    result = hash.map { |_k, v| v + 1 }
+
+    def something(x)
+      _unused_var, used_var = something_else(x)
+      # ...
+    end
+
     # good
     result = hash.map { |_, v| v + 1 }
+
+    def something(x)
+      _, used_var = something_else(x)
+      # ...
+    end
     ```
 
 * Use `$stdout/$stderr/$stdin` instead of
@@ -1399,6 +1447,10 @@ setting the warn level to 0 via `-W0`).
       ...
     end
     ```
+
+* Use `snake_case` for naming files, e.g. `hello_world.rb`.
+
+* Aim to have just a single class/module per source file. Name the file name as the class/module, but replacing CamelCase with snake_case.
 
 * Use `SCREAMING_SNAKE_CASE` for other constants.
 
@@ -2192,7 +2244,7 @@ this rule only to arrays with two or more elements.
     ```
 
 * Avoid the use of mutable objects as hash keys.
-* Use the hash literal syntax when your hash keys are symbols.
+* Use the Ruby 1.9 hash literal syntax when your hash keys are symbols.
 
     ```Ruby
     # bad
@@ -2200,6 +2252,18 @@ this rule only to arrays with two or more elements.
 
     # good
     hash = { one: 1, two: 2, three: 3 }
+    ```
+
+* Don't mix the Ruby 1.9 hash syntax with hash rockets in the same
+hash literal. When you've got keys that are not symbols stick to the
+hash rockets syntax.
+
+    ```Ruby
+    # bad
+    { a: 1, 'b' => 2 }
+
+    # good
+    { :a => 1, 'b' => 2 }
     ```
 
 * Use `Hash#key?` instead of `Hash#has_key?` and `Hash#value?` instead
@@ -2254,12 +2318,23 @@ this rule only to arrays with two or more elements.
    batman.fetch(:powers) { get_batman_powers }
    ```
 
+* Use `Hash#values_at` when you need to retrieve several values consecutively from a hash.
+
+    ```Ruby
+    # bad
+    email = data['email']
+    nickname = data['nickname']
+
+    # good
+    email, username = data.values_at('email', 'nickname')
+    ```
+
 * Rely on the fact that as of Ruby 1.9 hashes are ordered.
 * Never modify a collection while traversing it.
 
 ## Strings
 
-* Prefer string interpolation instead of string concatenation:
+* Prefer string interpolation and string formatting instead of string concatenation:
 
     ```Ruby
     # bad
@@ -2267,6 +2342,9 @@ this rule only to arrays with two or more elements.
 
     # good
     email_with_name = "#{user.name} <#{user.email}>"
+
+    # good
+    email_with_name = format('%s <%s>', user.name, user.email)
     ```
 
 * Consider padding string interpolation code with space. It more clearly sets the
@@ -2328,6 +2406,16 @@ this rule only to arrays with two or more elements.
 
     # good
     puts "$global = #{$global}"
+    ```
+
+* Don't use `Object#to_s` on interpolated objects. It's invoked on them automatically.
+
+    ```Ruby
+    # bad
+    message = "This is the #{result.to_s}."
+
+    # good
+    message = "This is the #{result}."
     ```
 
 * Avoid using `String#+` when you need to construct large data chunks.
@@ -2504,7 +2592,7 @@ this rule only to arrays with two or more elements.
     ```
 
 * Avoid the use of `%s`. It seems that the community has decided
-  `:"some string"` is the preferred way to created a symbol with
+  `:"some string"` is the preferred way to create a symbol with
   spaces in it.
 
 * Prefer `()` as delimiters for all `%` literals, except `%r`. Since
